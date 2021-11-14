@@ -6,12 +6,19 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 contract FundMe {
     
     address public owner;
+    address[] public funders;
     
     mapping(address => uint256) public addressToFund;
     
     constructor() {
         
         owner = msg.sender;
+    }
+    
+    modifier onlyOwner {
+        
+        require(msg.sender == owner);
+        _;
     }
     
     function fund() public payable {
@@ -21,6 +28,8 @@ contract FundMe {
         require(getRate(msg.value) >= minAmount, 'You need more money');
         
         addressToFund[msg.sender] += msg.value;
+        
+        funders.push(msg.sender);
     }
     
     function getPrice() public view returns(uint256) {
@@ -40,9 +49,15 @@ contract FundMe {
         return priceUsd;
     }
     
-    function withdraw() payable public {
+    function withdraw() payable public onlyOwner {
         
         payable(msg.sender).transfer(address(this).balance);
+        
+        for(uint256 funderIndex = 0; funderIndex < funders.length; funderIndex++){
+            
+            address funder = funders[funderIndex];
+            addressToFund[funder] = 0;
+        }
     }
     
     
